@@ -12,40 +12,18 @@
       overflow-x: hidden;
       transition: background 0.3s, color 0.3s;
     }
-    body.light {
-      background: #f9fafb;
-      color: #111827;
-    }
-    body.dark {
-      background: radial-gradient(circle at top left, #1e3a8a, #0f172a);
-      color: #fff;
-    }
-    .glass {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    .tab-active {
-      color: #60a5fa;
-      border-bottom: 2px solid #60a5fa;
-    }
-    .btn {
-      @apply w-full py-3 rounded-xl font-semibold shadow-md transition transform hover:-translate-y-0.5 hover:scale-105;
-    }
+    body.light { background: #f9fafb; color: #111827; }
+    body.dark { background: radial-gradient(circle at top left, #1e3a8a, #0f172a); color: #fff; }
+    .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.15); }
+    .tab-active { color: #60a5fa; border-bottom: 2px solid #60a5fa; }
+    .btn { @apply w-full py-3 rounded-xl font-semibold shadow-md transition transform hover:-translate-y-0.5 hover:scale-105; }
     .btn-blue { @apply bg-blue-600 hover:bg-blue-700 text-white; }
     .btn-green { @apply bg-green-600 hover:bg-green-700 text-white; }
     .btn-purple { @apply bg-purple-600 hover:bg-purple-700 text-white; }
     .btn-red { @apply bg-red-600 hover:bg-red-700 text-white; }
-    .btn-glow {
-      box-shadow: 0 0 15px rgba(96, 165, 250, 0.6);
-    }
-    .fade-in {
-      animation: fadeIn 0.6s ease forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    .btn-glow { box-shadow: 0 0 15px rgba(96, 165, 250, 0.6); }
+    .fade-in { animation: fadeIn 0.6s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body class="dark min-h-screen flex flex-col">
@@ -55,9 +33,7 @@
     <h1 class="text-2xl font-bold text-blue-400">AurianWay</h1>
     <nav class="flex items-center gap-6">
       <a href="#about" class="hover:text-blue-400 transition">About Us</a>
-      <button id="themeToggle" class="px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
-        🌙
-      </button>
+      <button id="themeToggle" class="px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">🌙</button>
     </nav>
   </header>
 
@@ -122,11 +98,9 @@
       <div id="officeSection" class="hidden fade-in text-center">
         <p class="text-gray-300 mb-8">Redirect to external tools for Office conversions:</p>
         <div class="grid grid-cols-2 gap-5">
-          <!-- Office → PDF -->
           <button onclick="window.open('https://www.ilovepdf.com/word_to_pdf','_blank')" class="btn btn-purple">DOCX → PDF</button>
           <button onclick="window.open('https://www.ilovepdf.com/powerpoint_to_pdf','_blank')" class="btn btn-red">PPTX → PDF</button>
           <button onclick="window.open('https://www.ilovepdf.com/excel_to_pdf','_blank')" class="btn btn-green">XLSX → PDF</button>
-          <!-- PDF → Office -->
           <button onclick="window.open('https://www.ilovepdf.com/pdf_to_word','_blank')" class="btn btn-purple">PDF → DOCX</button>
           <button onclick="window.open('https://www.ilovepdf.com/pdf_to_powerpoint','_blank')" class="btn btn-red">PDF → PPTX</button>
           <button onclick="window.open('https://www.ilovepdf.com/pdf_to_excel','_blank')" class="btn btn-green">PDF → XLSX</button>
@@ -137,12 +111,14 @@
 
   <!-- Footer -->
   <footer class="w-full glass text-center py-6 mt-10">
-    <p class="mb-2">📧 <a href="mailto:suryasinghsn44@gmail.com" class="text-blue-400 hover:underline">Contact us</a></p>
+    <p class="mb-2">📧 <a href="#" id="contactLink" class="text-blue-400 hover:underline">Contact us</a></p>
     <p class="mb-2"><a href="#privacy" class="hover:text-blue-400">Privacy Policy</a></p>
     <p class="text-gray-400">© 2025 AurianWay. All rights reserved.</p>
   </footer>
 
   <script>
+    const { jsPDF } = window.jspdf;
+
     const tabs = {
       tabImgToPdf: "imgToPdfSection",
       tabPdfToImg: "pdfToImgSection",
@@ -169,6 +145,82 @@
       body.classList.toggle("dark");
       body.classList.toggle("light");
       themeToggle.textContent = body.classList.contains("dark") ? "🌙" : "☀️";
+    });
+
+    // Contact link obfuscation
+    document.getElementById("contactLink").addEventListener("click", () => {
+      window.location.href = "mailto:" + ["suryasinghsn44","gmail.com"].join("@");
+    });
+
+    // Image → PDF
+    document.getElementById("convertBtn").addEventListener("click", async () => {
+      const fileInput = document.getElementById("imageInput");
+      if (!fileInput.files.length) return alert("Please upload an image.");
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          const pdf = new jsPDF({
+            orientation: document.getElementById("orientation").value,
+            unit: "pt",
+            format: document.getElementById("pageSize").value
+          });
+
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+
+          let imgWidth = img.width;
+          let imgHeight = img.height;
+
+          // Scale image to fit
+          if (imgWidth > pageWidth || imgHeight > pageHeight) {
+            const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+            imgWidth *= ratio;
+            imgHeight *= ratio;
+          }
+
+          pdf.addImage(img, "PNG", (pageWidth - imgWidth) / 2, (pageHeight - imgHeight) / 2, imgWidth, imgHeight);
+          pdf.save("converted.pdf");
+        };
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // PDF → Images
+    document.getElementById("extractBtn").addEventListener("click", async () => {
+      const fileInput = document.getElementById("pdfInput");
+      if (!fileInput.files.length) return alert("Please upload a PDF.");
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async (e) => {
+        const typedArray = new Uint8Array(e.target.result);
+        const pdf = await pdfjsLib.getDocument(typedArray).promise;
+        const preview = document.getElementById("imagePreview");
+        preview.innerHTML = "";
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          const imgUrl = canvas.toDataURL("image/png");
+          const imgEl = document.createElement("img");
+          imgEl.src = imgUrl;
+          imgEl.className = "rounded-lg shadow-lg";
+          preview.appendChild(imgEl);
+        }
+      };
+      reader.readAsArrayBuffer(file);
     });
   </script>
 </body>
