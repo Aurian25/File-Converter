@@ -79,6 +79,14 @@
           </div>
         </div>
 
+        <!-- Preview -->
+        <div id="previewContainer" class="hidden mb-6 text-center">
+          <h3 class="text-lg font-semibold mb-3">Preview</h3>
+          <div class="border rounded-xl p-3 bg-white inline-block shadow-lg">
+            <canvas id="pdfPreviewCanvas" class="max-w-full"></canvas>
+          </div>
+        </div>
+
         <button id="convertBtn" class="btn btn-blue btn-glow">Convert to PDF</button>
       </div>
 
@@ -152,44 +160,78 @@
       window.location.href = "mailto:" + ["suryasinghsn44","gmail.com"].join("@");
     });
 
-    // Image → PDF
-    document.getElementById("convertBtn").addEventListener("click", async () => {
-      const fileInput = document.getElementById("imageInput");
-      if (!fileInput.files.length) return alert("Please upload an image.");
+    // ---------- Image Preview + PDF Conversion ----------
+    const previewContainer = document.getElementById("previewContainer");
+    const previewCanvas = document.getElementById("pdfPreviewCanvas");
+    const previewCtx = previewCanvas.getContext("2d");
+    let currentImg = null; // store uploaded image
 
-      const file = fileInput.files[0];
+    function renderPreview() {
+      if (!currentImg) return;
+
+      const orientation = document.getElementById("orientation").value;
+      const pageSize = document.getElementById("pageSize").value;
+      const sizes = { a3:[842,1191], a4:[595,842], a5:[420,595] };
+      let [w,h] = sizes[pageSize];
+      if (orientation === "landscape") [w,h] = [h,w];
+
+      previewCanvas.width = w;
+      previewCanvas.height = h;
+
+      previewCtx.fillStyle = "#fff";
+      previewCtx.fillRect(0,0,w,h);
+
+      let imgW = currentImg.width, imgH = currentImg.height;
+      const ratio = Math.min(w / imgW, h / imgH);
+      imgW *= ratio;
+      imgH *= ratio;
+
+      previewCtx.drawImage(currentImg,(w-imgW)/2,(h-imgH)/2,imgW,imgH);
+      previewContainer.classList.remove("hidden");
+    }
+
+    document.getElementById("imageInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      reader.onload = (ev) => {
         const img = new Image();
-        img.src = e.target.result;
+        img.src = ev.target.result;
         img.onload = () => {
-          const pdf = new jsPDF({
-            orientation: document.getElementById("orientation").value,
-            unit: "pt",
-            format: document.getElementById("pageSize").value
-          });
-
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const pageHeight = pdf.internal.pageSize.getHeight();
-
-          let imgWidth = img.width;
-          let imgHeight = img.height;
-
-          // Scale image to fit
-          if (imgWidth > pageWidth || imgHeight > pageHeight) {
-            const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
-            imgWidth *= ratio;
-            imgHeight *= ratio;
-          }
-
-          pdf.addImage(img, "PNG", (pageWidth - imgWidth) / 2, (pageHeight - imgHeight) / 2, imgWidth, imgHeight);
-          pdf.save("converted.pdf");
+          currentImg = img;
+          renderPreview();
         };
       };
       reader.readAsDataURL(file);
     });
 
-    // PDF → Images
+    // Update preview on page size/orientation change
+    document.getElementById("pageSize").addEventListener("change", renderPreview);
+    document.getElementById("orientation").addEventListener("change", renderPreview);
+
+    document.getElementById("convertBtn").addEventListener("click", () => {
+      if (!currentImg) return alert("Please upload an image.");
+
+      const pdf = new jsPDF({
+        orientation: document.getElementById("orientation").value,
+        unit: "pt",
+        format: document.getElementById("pageSize").value
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      let imgWidth = currentImg.width;
+      let imgHeight = currentImg.height;
+      const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+      imgWidth *= ratio;
+      imgHeight *= ratio;
+
+      pdf.addImage(currentImg, "PNG", (pageWidth - imgWidth) / 2, (pageHeight - imgHeight) / 2, imgWidth, imgHeight);
+      pdf.save("converted.pdf");
+    });
+
+    // ---------- PDF → Images ----------
     document.getElementById("extractBtn").addEventListener("click", async () => {
       const fileInput = document.getElementById("pdfInput");
       if (!fileInput.files.length) return alert("Please upload a PDF.");
